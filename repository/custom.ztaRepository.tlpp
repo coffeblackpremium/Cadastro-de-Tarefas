@@ -1,0 +1,144 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+
+/*/{Protheus.doc} ZTARepository
+Classe de Repositorio para manipulação da ZTA (Cabeçalho de Tarefas)
+@type class
+@version  1.0
+@author João Damaceno
+@since 17/04/2026
+/*/
+class ZTARepository
+    Method New() constructor
+
+    // Metodo de Consulta
+    Method FindById(cID)
+    Method FindAll(cStatus, cResp)
+
+    // Metodo de Persistência
+    Method Insert(jBody)
+    Method Update(cId, jBody)
+    Method Delete(cID)
+
+EndClass
+
+/*/{Protheus.doc} ZTARepository::New
+Metodo Construtor.
+@type method
+@version  1.0
+@author João Damaceno - J2A Consultoria
+@since 17/04/2026
+@return Object, Retorna a propria classe.
+/*/
+Method New() Class ZTARepository
+Return Self
+
+
+/*/{Protheus.doc} ZTARepository::FindById
+Procura uma Tarefa pelo ID
+@type method
+@version  1.0
+@author João Damaceno
+@since 17/04/2026
+@param cID, character, ID da Tarefa
+@return JSON, Retorna o JSON da  Tarefa
+/*/
+Method FindById(cID) class ZTARepository
+    Local jTarefa := Nil
+
+    DBSelectArea("ZTA")
+    ZTA->(DBSetOrder(1))
+    
+    If ZTA->(MsSeek(FWXFilial("ZTA") + cId))
+        jTarefa := JsonObject():New()
+        jTarefa["id"]               := AllTrim(ZTA->ZTA_ID)
+        jTarefa["titulo"]           := AllTrim(ZZTA->ZTA_TITULO)
+        jTarefa["status"]           := AllTrim(ZTA->ZTA_STATUS)
+        jTarefa["prioridade"]       := AllTrim(ZTA->ZTA_PRIORIDADE)
+        jTarefa["dtFim"]            := STod(ZTA->ZTA_DTFIM)
+        jTarefa["percentual"]       := AllTrim(ZTA->ZTA_PERCNT)
+        jTarefa["categoria"]        := AllTrim(ZTA->ZTA_CATEG)
+        jTarefa["descricao"]        := MSMM(ZTA->ZTA_DESC)
+        jTarefa["observacao"]       := MSMM(ZTA->ZTA_OBS)
+    EndIf
+
+Return jTarefa
+
+/*/{Protheus.doc} ZTARepository::Insert
+Insere uma nova Tarefa na Filial
+@type method
+@version  1.0
+@author João Damaceno 
+@since 17/04/2026
+@param jBody, json, Recebe o Body do HTTP
+@return Logical, Se verdadeiro retorna True.
+/*/
+Method Insert(jBody) class ZTARepository
+    Local lRet      := .F.
+    Local dData     := Nil
+
+    dData := Date()
+
+    DBSelectArea("ZTA")
+
+    // TODO: Adicionar um Try Catch para tratamento de erro.
+    
+    RecLock("ZTA", .T.)
+        ZTA->ZTA_FILIAL     := FwXFilial("ZTA")
+        ZTA->ZTA_ID         := jBody["id"]
+        ZTA->ZTA_TITULO     := jBody["titulo"]
+        ZTA->ZTA_STATUS     := jBody["status"]
+        ZTA->ZTA_PRIOR      := jBody["prioridade"] 
+        ZTA->ZTA_DTINI      := dDataBase
+        ZTA->ZTA_DTFIM      := jBody["dataFim"]
+        ZTA->ZTA_PERCNT     := jBody["percentual"]
+        ZTA->ZTA_CATEG      := jBody["categoria"]
+        ZTA->ZTA_DESC       := jBody["descricao"]
+        ZTA->ZTA_OBS        := jBody["observacao"]
+    ZTA->(MsUnlock())
+
+    lRet := .T.
+Return lRet
+
+
+/*/{Protheus.doc} ZTARepository::FindAll
+Procura todos os Items da Tarefa
+@type method
+@version  1.0
+@author João Damaceno
+@since 17/04/2026
+@param cStatus, character, Status da Tarefa
+@param cResp, character, 
+@return Array, Retorna as Tarefas da Filial.
+/*/
+Method FindAll(cStatus, cResp) class ZTARepository
+    Local aTask     := {}
+    Local jItem     := Nil
+    Local cQuery    := ""
+    Local cAlias    := ""
+
+    cQuery :=   " SELECT ZTA_ID, ZTA_TITULO, ZTA_STATUS" +; 
+                "FROM " + RetSqlName("ZTA") + ; 
+                " WHERE" + ;
+                "    ZTA_FILIAL = '" + FwXFilial("ZTA") + "'" + ;
+                "    AND D_E_L_E_T_ = ' ' "
+    
+    If !Empty(cStatus)
+        cQuery += "AND ZTA_STATUS = '" + cStatus + "'"
+    EndIf
+
+    cAlias := MPSysOpenQuery(cQuery)
+
+    While !(cAlias)->(EOF())
+        jItem := JsonObject():New()
+        jItem["id"] := AllTrim((cAlias)->ZTA_ID)
+        jItem["titulo"] := AllTrim((cAlias)->ZTA_TITULO)
+        jItem["status"] := AllTrim((cAlias)->ZTA_STATUS)
+    
+        AAdd(aTasks, jItem)
+        (cAlias)->(DbSkip())
+    EndDo
+    
+    (cAlias)->(DbCloseArea())
+
+Return aTask

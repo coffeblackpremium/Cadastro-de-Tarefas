@@ -1,0 +1,98 @@
+# ============================================================
+# .gitignore para projetos ADVPL / TLPP (TOTVS Protheus)
+# ============================================================
+
+# -----------------------------------------------
+# TDS-VSCode / Configurações de IDE
+# -----------------------------------------------
+.vscode/
+*.vscode
+
+# -----------------------------------------------
+# Arquivos de compilação e binários ADVPL/TLPP
+# -----------------------------------------------
+*.erp
+*.rpo
+*.aph
+*.apw
+*.apl
+*.app
+
+# -----------------------------------------------
+# Patches e pacotes de atualização
+# -----------------------------------------------
+*.ptm
+*.pat
+
+# -----------------------------------------------
+# Arquivos de log e debug
+# -----------------------------------------------
+*.log
+tdsSupport.zip
+errolog*
+console.log
+
+# -----------------------------------------------
+# Arquivos temporários do Protheus
+# -----------------------------------------------
+*.tmp
+*.bak
+*.old
+*.swp
+*~
+
+# -----------------------------------------------
+# Arquivos de ambiente / configuração sensível
+# -----------------------------------------------
+*.env
+servers.json
+launch.json
+
+# -----------------------------------------------
+# Diretórios de saída e build
+# -----------------------------------------------
+/out/
+/bin/
+/build/
+/dist/
+
+# -----------------------------------------------
+# Sistema Operacional
+# -----------------------------------------------
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux
+*~
+.directory
+
+# -----------------------------------------------
+# Node.js (caso use ferramentas JS no projeto)
+# -----------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+*.tgz
+
+# -----------------------------------------------
+# Outros
+# -----------------------------------------------
+*.vsix
+*.zip
+*.tar.gz

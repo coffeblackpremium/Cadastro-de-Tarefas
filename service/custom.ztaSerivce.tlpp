@@ -1,0 +1,292 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+
+/*/{Protheus.doc} ZTAService
+Classe de Serviço do Cabeçalho de Tarefa
+@type class
+@version  1.0
+@author João Damaceno
+@since 17/04/2026
+/*/
+Class ZTAService
+    Data oRepository As Object
+
+    Method New() constructor
+    Method GetAll()
+    Method GetById()
+    Method Create()
+    Method Update()
+    Method Delete()
+
+    // Metodos Privados de Validação
+    Method _Validate()
+    Method _BuildResponse()
+
+EndClass
+
+/*/{Protheus.doc} ZTAService::New
+Metodo Construtor
+@type method
+@version  1.0
+@author João Damaceno
+@since 17/04/2026
+@return variant, return_description
+/*/
+Method New() Class ZTAService
+    Self:oRepository := ZTARepository():New()
+Return Self
+
+/*/{Protheus.doc} ZTAService::GetAll
+Retorna todos os JSON.
+@type method
+@version  1.0
+@author João Damaceno
+@since 17/04/2026
+@return JSON, Retorna todas as Tarefas.
+/*/
+Method GetAll() Class ZTAService
+    Local aTarefas      := {}
+    Local cError        := ""
+    Local oErr          := ErrorClass():New()
+
+    Default cStatus := ""
+    Default cResp   := ""
+
+    oErr := ErrorClass():New()
+
+    Try
+        aTarefas := Self:oRepository:FindAll(cStatus, cResp)
+
+        If Len(aTarefas) == 0
+            Return Self:_BuildResponse(204, Nil, "Nenhuma Tarefa encontrada")
+        EndIf
+    Catch oErr
+        cError := oErr:Description
+        Return Self:_BuildResponse(500, NIL, "Erro ao Buscar tarefas: " + cError)
+    End
+
+Return Self:_BuildResponse(200, aTarefas, cError)
+/*/{Protheus.doc} ZTAService::GetById
+Retorna pelo Identificador Unico da Tarefa
+@type method
+@version 1.0
+@author João Damaceno
+@since 17/04/2026
+@param cId, character, param_description
+@return JSON, Retorna a Tarefa encontrada.
+/*/
+Method GetById(cId) Class ZTAService
+    Local jTarefa       := Nil
+    Local cError        := ""
+    Local oErr          := Nil
+
+    Default cId         := ""
+
+    Try
+        If Empty(cID)
+            Return Self:_BuildResponse(400, Nil, "ID da Tarefa nao informado")
+        EndIf
+
+    Catch oErr
+        cError := oErr:Description
+        Return Self:_BuildResponse(500, NIL, "Erro ao Buscar tarefa: " + cError)
+    End
+
+Return Self:_BuildResponse(200, jTarefa, "Tarefa Encontrada com Sucesso.")
+
+/*/{Protheus.doc} ZTAService::Create
+Insere uma nova Tarefa.
+@type method
+@version  1.0
+@author João Damaceno 
+@since 17/04/2026
+@param jBody, json, JSON contendo a tarefa a ser criada.
+@return JSON, Retorna a Tarefa criada.
+/*/
+Method Create(jBody) Class ZTAService
+    Local aErros        := {}
+    Local lRet          := .F.
+    Local cError        := ""
+
+    Try
+        aErros := Self:_Validate(jBody, "CREATE")
+
+        If Len(aErros) > 0
+            Return Self:_BuildResponse(400, aErros, "Erro de Validação")
+        EndIf
+
+        jBody["id"]             := GetSxeNum("ZTA", "ZTA_ID")
+        jBoyd["status"]         := IIF(Empty(jBody["status"]), "1", jBody["status"])
+        jBoyd["percentual"]     := IIF(Empty(jBody["percentual"]), "0", jBody["percentual"])
+
+        lRet := Self:oRepository:Insert(jBody)
+
+        If !lRet
+            Return Self:_BuildResponse(500, Nil, "Erro ao Gravar Tarefa no Banco.")
+        EndIF
+
+    Catch oErr
+        cError := oErr:Description
+        Return Self:_BuildResponse(500, NIL, "Erro ao Gravar Tarefa: " + cError)
+    End
+
+Return Self:_BuildResponse(201, jBody, "Tarefa Criada com Sucesso.")
+ 
+/*/{Protheus.doc} ZTAService::Update
+Atualiza uma Tarefa Existente
+@type method
+@version  1.0
+@author João Damaceno
+@since 17/04/2026
+@param cId, character, Identificador da Tarefa
+@param jBody, json, JSON contendo a tarefa a ser atualizada.
+@return JSON, Retorna a Tarefa atualizada.
+/*/
+ Method Update(cId, jBody) class ZTAService
+    Local aErros        := {}
+    Local jTarefa       := Nil
+    Local lRet          := .F.
+    Local cError        := ""
+
+    Default cId         := ""
+
+    Try
+        If Empty(cID)
+            Return Self:_BuildResponse(400, Nil, "ID da Tarefa nao informado.")
+        EndIf
+
+        jTarefa := Self:oRepository:FindById(cId)
+        
+        If jTarefa == Nil
+            Return Self:_BuildResponse(404, Nil, "Tarefa não encontrada.")
+        EndIf
+
+        aErros := Self:_Validate(jBody, "UPDATE")
+
+        If Len(aErros) > 0
+            Return Self:_BuildResponse(400, aErros, "Erro de Validação.")
+        EndIF
+
+        If jBody["status"] == "3" .And. Empty(jBody["dtConc"])
+            jBody["dtConc"] := DToS(Date())
+        EndIf
+
+        lRet := Self:oRepository:Update(cId, jBody)
+
+        If !lRet
+            Return Self:_BuildResponse(500, Nil, "Erro ao Atualizar Tarefa no Banco.")
+        EndIf
+
+    Catch oErr
+        cError := oErr:Description
+        Return Self:_BuildResponse(500, NIL, "Erro ao Atualizar Tarefa: " + cError)
+    End
+ Return 
+/*/{Protheus.doc} ZTAService::Delete
+Deleta a Tarefa pelo Identificador.
+@type method
+@version  1.0
+@author João Damaceno
+@since 17/04/2026
+@param cId, character, Identificador
+@return JSON, Retorna a Tarefa deletada.
+/*/
+Method Delete(cId) Class ZTAService
+    Local jTarefa   := Nil
+    Local lRet      := .F.
+    Local cError    := ""
+
+    Default cId     := ""
+
+    Try
+        If Empty(cID)
+            Return Self:_BuildResponse(400, Nil, "ID da Tarefa nao informado.")
+        EndIf
+
+        jTarefa := Self:oRepository:FindById(cId)
+
+        If jTarefa == Nil
+            Return Self:_BuildResponse(404, Nil, "Tarefa nao encontrada.")
+        EndIf
+
+        lRet := Self:oRepository:Delete(cId)
+
+        If !lRet
+            Return Self:_BuildResponse(500, Nil, "Erro ao Excluir Tarefa no Banco.")
+        EndIf
+
+    Catch oError
+        cError := oErr:Description
+        Return Self:_BuildResponse(500, Nil, "Erro ao Excluir Tarefa: " + cError)
+    End
+Return Self:_BuildResponse(200, Nil, "Tarefa Excluida com Sucesso.")
+
+/*/{Protheus.doc} ZTAService::_Validate
+Valida os dados da Tarefa.
+@type method
+@version  1.0
+@author João Damaceno
+@since 17/04/2026
+@param jBody, json, JSON contendo os dados da Tarefa
+@param cTipo, character, Tipo de Entrada de Dados
+@return array, Retorna os erros da validação.
+/*/
+Method _Validate(jBody, cTipo) class ZTAService
+    Local aErros     := {}
+
+    Default cTipo    := ""
+
+    If Empty(jBody["titulo"])
+        AAdd(aErros, "Campo Responsável é Obrigatório.")
+    EndIf
+
+    If Empty(jBody["responsavel"])
+        AAdd(aErros, "Campo Responsável é obrigatório")
+    EndIf
+
+    If Empty(jBody["dtFim"])
+        AAdd(aErros, "Campo Data Fim é Obrigatório.")
+    EndIF
+
+    If Empty(jBody["prioridade"])
+        AAdd(aErros, "Campo prioridade é obrigatório.")
+    EndIF
+
+    If cTipo == "CREATE"
+        If Empty(jBody["solicitante"])
+            AAdd(aErros, "Campo Solicitante é obrigatório.")
+        EndIf
+
+        If !Empty(jBody["dtIni"]) .AND. !Empty(jBody["dtFim"])
+            If StoD(jBody["dtFim"]) < StoD(jBody["dtIni"])
+                AAdd(aErros, "Data Prevista nao pode ser menor que a data de Inicio")
+            EndIF
+        EndIf
+
+        If !Empty(jBody["percentual"]) < 0 .OR. jBody["percentual"] > 100
+            AAdd(aErros, "Percentual nao pode ser menor que 0 ou maior que 100.")
+        EndIF
+
+    EndIF
+Return aErros
+
+
+/*/{Protheus.doc} ZTAService::_BuildResponse
+Metodo padrão para publicar a rotina.
+@type method
+@version  1.0
+@author João Damaceno
+@since 22/04/2026
+@param cStatus, character, Status da Requisição.
+@param jBody, json, Corpo da Requisição.
+@param cError, character, codigo de erro.
+@return JSON, Retorna template padrão do Json.
+/*/
+Method _BuildResponse(cStatus, jBody, cError) class ZTAService
+    Local jResponse :=  JsonObject():New()
+
+    jResponse["status"] := cStatus
+    jResponse["body"]   := jBody
+    jResponse["error"]  := cError
+
+Return jResponse

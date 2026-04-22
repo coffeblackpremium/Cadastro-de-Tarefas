@@ -1,0 +1,91 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+
+
+
+Class ZTAController
+    Data oService As Object
+    Data oErr     As Object
+
+    Method GetAll()
+    Method GetById()
+    Method Create()
+    Method Update()
+    Method Delete()
+
+    Method _SendResponse()
+    Method _GetBody()
+
+EndClass 
+
+/*/{Protheus.doc} ZTAController::New
+Metodo Construtor da Classe.
+@type method
+@version  1.0
+@author João Damaceno
+@since 22/04/2026
+@return variant, return_description
+/*/
+Method New() Class ZTAController
+    Self:oService := ZTAService():New()
+Return Self 
+
+
+@Get("/tarefas")
+Method GetAll() class ZTAController
+    Local cStatus       := ""
+    Local cResp         := ""
+    Local jResponse     := Nil
+
+    Try
+        cStatus     := IIF(IsNil(oRest:GetQueryParam("status")), "", oRest:GetQueryParam("status"))
+        cResp       := IIF(IsNil(oRest:GetQueryParam("resp")), "", oRest:GetQueryParam("resp"))
+
+        jResponse := Self:oService:GetAll(cStatus, cResp)
+
+    Catch Self:oErr
+        jResponse := Self:_BuildError(Self:oErr)
+    End
+Return Self:_SendResponse(Self)
+
+@Get("/?arefas/:id")
+Method GetById() class ZTAController
+    Local cId           := ""
+    Local jResponse     := Nil 
+
+    Try
+        // Pega o ID da URL
+        cId := oRest:GetPathParam("id")
+
+        If Empty(cId)
+            jResponse := Self:_BuildManualError(400, "ID da Tarefa não encontrado.")
+            Return Self:_SendResponse(jResponse)
+        EndIf
+
+        jResponse := Self:oService:GetById(cId)
+
+    Catch Self:oErr
+        jResponse := Self:_BuildError(Self:oErr)
+    End
+
+Return Self:_SendResponse(jResponse)
+
+/*/{Protheus.doc} ZTAController::Create
+Cria uma nova Tarefa com o base o Body do JSON
+@type method
+@version  1.0
+@author João Damaceno
+@since 22/04/2026
+@return JSON, Retorna o JSON da Tarefa criada
+/*/
+@Post("/tarefas")
+Method Create() Class ZTAController
+    Local jBody     := Self:_GetBody()
+    Local jResponse := Nil
+
+    Try
+        
+    Catch oErr
+
+    End
+Return

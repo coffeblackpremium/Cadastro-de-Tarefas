@@ -107,8 +107,8 @@ Procura todos os Items da Tarefa
 @version  1.0
 @author João Damaceno
 @since 17/04/2026
-@param cStatus, character, Status da Tarefa
-@param cResp, character, 
+@param cStatus, character, Status da Tarefa.
+@param cResp, character, Response da Tarefa.
 @return Array, Retorna as Tarefas da Filial.
 /*/
 Method FindAll(cStatus, cResp) class ZTARepository

@@ -30,7 +30,6 @@ Method New() Class ZTAController
     Self:oService := ZTAService():New()
 Return Self 
 
-
 @Get("/tarefas")
 Method GetAll() class ZTAController
     Local cStatus       := ""
@@ -84,8 +83,166 @@ Method Create() Class ZTAController
     Local jResponse := Nil
 
     Try
-        
-    Catch oErr
+        jBody := Self:_GetBody()
+        If Jbody == Nil
+            jResponse := Self:_BuildManualError(400, "Body inválido ou não informado.")
+            Return Self:_SendResponse(jResponse)
+        EndIf
 
+        jResponse := Self:oService:Create(jBody)
+
+    Catch oErr
+        jResponse := Self:_BuildError(Self:oErr)
     End
 Return
+/*/{Protheus.doc} ZTAController::Update
+Atualiza os Dados da Tarefa
+@type method
+@version  1.0
+@author João Damaceno
+@since 23/04/2026
+@return JSON, Retorna o JSON da Tarefa Atualizada.
+/*/
+@Put("/tarefas/:id")
+Method Update() Class ZTAController
+    Local cId           := ""
+    Local jBody         := Nil
+    Local jResponse     :=
+
+    Try
+        cId     := oRest:GetPathParam("id")
+        jBody   := Self:_GetBody()
+
+        If Empty(cId)
+            jResponse := Self:_BuildManualError(400, "ID da Tarefa nao informado.")
+            Return Self:_SendResponse(jResponse)
+        EndIf
+
+        If jBody == Nil
+            jResponse := Self:_BuildManualError(400, "Body invalido ou não informado.")
+            Return Self:_SendResponse(jResponse)
+        EndIf
+
+        jResponse := Self:oService:Update(cId, jBody)
+
+    Catch Self:oErr
+        jResponse := Self:_BuildError(Self:oErr)
+    End
+Return Self:_SendResponse(jResponse)
+
+
+
+@Delete("/tarefas/:id")
+Method Delete() Class ZTAController
+    Local cId           := ""
+    Local jResponse     := Nil
+
+    Try
+        cId := oRest:GetPathParam("id")
+
+        If Empty(cId)
+            jResponse := Self:_BuildManualError(400, "ID da Tarefa nao Informado.")
+            Return Self:_SendResponse(jResponse)
+        EndIf
+
+        jResponse := Self:oService:Delete(cId)
+
+    Catch Self:oErr
+        jResponse := Self:_BuildError(Self:oErr)
+    End
+Return Self:_SendResponse(jResponse)
+
+/*/{Protheus.doc} ZTAController::_GetBody
+Le e Deserializa o Body da Requisição para o JsonObject
+@type method
+@version  
+@author João Damaceno - J2A Consultoria
+@since 23/04/2026
+@return variant, return_description
+/*/
+Method _GetBody() Class ZTAController
+    Local cBody := ""
+    Local jBody := Nil
+    Local oErr As Object
+
+    Try
+        cBody := oRest:GetBody()
+
+        If Empty(cBod)
+            Return Nil
+        EndIf
+
+        jBody := JsonObject():New()
+        jBody:FromJson(cBody)
+
+    Catch oErr
+        ConOut("ZTAController:_GetBody - Erro ao Ler o Body: " + oErr:Description)
+    End
+
+Return jBody
+/*/{Protheus.doc} ZTAController::_SendResponse
+description
+@type method
+@version  1.0
+@author João Damaceno - J2A Consultoria
+@since 23/04/2026
+@param jResponse, json, param_description
+@return character, Retorna o JSON da Resposta.
+/*/
+Method _SendResponse(jResponse) Class ZTAController
+    Local nStatus   := 200
+    Local cJson     := ""
+
+
+    If jResponse == Nil
+        jResponse := JsonObject():New()
+        jResponse["status"]     := 500
+        jResponse["message"]    := "Erro inesperado."
+        jResponse["data"]       := JsonObject():New()
+    EndIf
+
+    nStatus := jResponse["status"]
+    cJson   := jResponse:ToJson()
+
+    oRest:setStatus(nStatus)
+    oRest:setContentType("application/json")
+
+Return cJson
+
+/*/{Protheus.doc} ZTAController::_BuildError
+Monta Resposta de Erro a partir de um ErrorObject Nativo
+@type method
+@version  1.0
+@author João Damaceno
+@since 23/04/2026
+@param oErr, object, Objeto Error.
+@return JSON, Retorno do Objeto JSON.
+/*/
+Method _BuildError(oErr) Class ZTAController
+    Local jError := JsonObject():New()
+
+    jError["status"]    := 500
+    jError["message"]   := oErr:Description + " | Linha: " + cValToChar(oErr:Line)
+    jError["data"]      := JsonObject():New()
+
+Return jError
+
+
+/*/{Protheus.doc} ZTAController::_BuildManualError
+Monta Resposta de Erro Manual.
+@type method
+@version  1.0
+@author João Damaceno
+@since 23/04/2026
+@param nStatus, numeric, Num HTTP do erro da mensagem.
+@param cMessage, character, Mensagem de Erro.
+@return Json, Retorno do JSON 
+/*/
+Method _BuildManualError(nStatus, cMessage) Class ZTAController
+    Local jError := JsonObject():New()
+
+    jError["status"]    := nStatus
+    jError["message"]   := cMessage
+    jError["data"]      := JsonObject():New()
+    
+Return jError
